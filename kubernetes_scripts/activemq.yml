@@ -18,7 +18,7 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: activemq-cluster
@@ -58,4 +58,3 @@ spec:
             timeoutSeconds: 10
             periodSeconds: 60
             failureThreshold: 3
-
