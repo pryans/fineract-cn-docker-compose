@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -x
 
 kubectl delete -f notifications.yml
 kubectl delete -f group.yml
@@ -22,5 +22,6 @@ kubectl delete -f postgres.yml
 kubectl delete -f cassandra.yml
 kubectl delete -f eureka.yml
 kubectl delete -f activemq.yml
+kubectl delete -f fims-web-app.yml
 
 rm ../bash_scripts/cluster_addressess.txt

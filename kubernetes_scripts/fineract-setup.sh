@@ -1,6 +1,7 @@
 #!/bin/bash -ex
 
 AWS_REGION="us-east-2"
+EKS_CLUSTER="eks-fineract-cluster02"
 
 # NOTE!!!! The IAM user used to create the EKS cluster will be the only one able
 # to initially connect to it. This user will need aws cli console access and
@@ -8,7 +9,10 @@ AWS_REGION="us-east-2"
 
 # install aws cli and configure with user you used to create EKS cluster
 brew install awscli
-aws configure
+
+if [[ ! -f ~/.aws/credentials && ! -f ~/.aws/config ]]; then
+    aws configure
+fi
 
 # install eksctl
 brew tap weaveworks/tap
@@ -21,7 +25,7 @@ eksctl version
 # EKS Setup
 # https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html
 eksctl create cluster \
- --name eks-fineract-cluster01 \
+ --name "${EKS_CLUSTER}" \
  --version 1.18 \
  --with-oidc \
  --without-nodegroup
@@ -30,11 +34,11 @@ eksctl create cluster \
 
 # add node group to cluster
 eksctl create nodegroup \
-  --cluster eks-fineract-cluster01 \
+  --cluster "${EKS_CLUSTER}" \
   --region "${AWS_REGION}" \
   --name eks-fineract-cluseter01-nodes \
-  --node-type t2.medium \
-  --nodes-min 2 \
+  --node-type t3.large \
+  --nodes-min 3 \
   --nodes-max 6 \
   --node-ami-family AmazonLinux2 \
   --managed
@@ -50,7 +54,7 @@ eksctl create nodegroup \
 rm ~/.kube/config
 
 # generate ~/.kube/config
-aws eks --region "${AWS_REGION}" update-kubeconfig --name eks-fineract-cluster01
+aws eks --region "${AWS_REGION}" update-kubeconfig --name "${EKS_CLUSTER}"
 
 # This should work without error is kubectl is setup
 kubectl get svc
@@ -60,4 +64,4 @@ kubectl get svc
 #> kubernetes   ClusterIP   10.1.0.1     <none>        443/TCP   8m6s
 
 # Deploy Fineract-CN
-./kubectl-start-up.sh
+./fineract-start.sh

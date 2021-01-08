@@ -1,9 +1,8 @@
-#!/bin/bash
-set -e
+#!/bin/bash -ex
 
 function init-variables {
     CASSANDRA_REPLICATION_TYPE="Simple"
-    CASSANDRA_CONTACT_POINTS="cassandra:9042"
+    CASSANDRA_CONTACT_POINTS="UNKNOWN"
     CASSANDRA_CLUSTER_NAME="datacenter1"
     CASSANDRA_REPLICAS="1"
 
@@ -13,20 +12,20 @@ function init-variables {
     POSTGRESQL_PORT="5432"
     POSTGRESQL_USER="postgres"
 
-    PROVISIONER_URL="http://provisioner-ms:2020/provisioner/v1"
-    IDENTITY_URL="http://identity-ms:2021/identity/v1"
-    RHYTHM_URL="http://rhythm-ms:2022/rhythm/v1"
-    OFFICE_URL="http://office-ms:2023/office/v1"
-    CUSTOMER_URL="http://customer-ms:2024/customer/v1"
-    ACCOUNTING_URL="http://accounting-ms:2025/accounting/v1"
-    PORTFOLIO_URL="http://portfolio-ms:2026/portfolio/v1"
-    DEPOSIT_URL="http://deposit-ms:2027/deposit/v1"
-    TELLER_URL="http://teller-ms:2028/teller/v1"
-    REPORT_URL="http://reporting-ms:2029/report/v1"
-    CHEQUES_URL="http://cheques-ms:2030/cheques/v1"
-    PAYROLL_URL="http://payroll-ms:2031/payroll/v1"
-    GROUP_URL="http://group-ms:2032/group/v1"
-    NOTIFICATIONS_URL="http://notifications-ms:2033/notification/v1"
+    PROVISIONER_URL="UNKNOWN"
+    IDENTITY_URL="UNKNOWN"
+    RHYTHM_URL="UNKNOWN"
+    OFFICE_URL="UNKNOWN"
+    CUSTOMER_URL="UNKNOWN"
+    ACCOUNTING_URL="UNKNOWN"
+    PORTFOLIO_URL="UNKNOWN"
+    DEPOSIT_URL="UNKNOWN"
+    TELLER_URL="UNKNOWN"
+    REPORT_URL="UNKNOWN"
+    CHEQUES_URL="UNKNOWN"
+    PAYROLL_URL="UNKNOWN"
+    GROUP_URL="UNKNOWN"
+    NOTIFICATIONS_URL="UNKNOWN"
 
     MS_VENDOR="Apache Fineract"
     IDENTITY_MS_NAME="identity-v1"
@@ -45,8 +44,10 @@ function init-variables {
 }
 
 function config-kubernetes-addresss {
-    kubectl get services -o=jsonpath="{range .items[*]}{.metadata.name}{\"=\"}{.status.loadBalancer.ingress[0].ip}{\"\n\"}{end}" > cluster_addressess.txt
-    while IFS="=" read -r service ip; do
+    kubectl get services | awk '{print $1","$4}' | grep -v "NAME,EXTERNAL-IP" > cluster_addressess.txt
+    while IFS="=" read -r LINE; do
+        ip=$(echo "${LINE}" | awk -F',' '{print $2}')
+        service=$(echo "${LINE}" | awk -F',' '{print $1}')
         if [[ ${#ip} -gt 0  ]]
         then
             case "$service" in
@@ -54,19 +55,19 @@ function config-kubernetes-addresss {
                 "cassandra-cluster")    CASSANDRA_CONTACT_POINTS="$ip:9042" ;;
                 "postgresdb-cluster")   POSTGRES_HOST="$ip" ;;
                 "provisioner-service")   PROVISIONER_URL="http://$ip:2020/provisioner/v1" ;;
-                "identity-service")   IDENTITY_URL="http://$ip:2021/identity/v1" ;;
+                "identity-ms")   IDENTITY_URL="http://$ip:2021/identity/v1" ;;
                 "rhythm-service")   RHYTHM_URL="http://$ip:2022/rhythm/v1" ;;
-                "office-service") OFFICE_URL="http://$ip:2023/office/v1" ;;
-                "customer-service")   CUSTOMER_URL="http://$ip:2024/customer/v1" ;;
-                "accounting-service")   ACCOUNTING_URL="http://$ip:2025/accounting/v1" ;;
-                "portfolio-service")   PORTFOLIO_URL="http://$ip:2026/portfolio/v1" ;;
-                "deposit-service")   DEPOSIT_URL="http://$ip:2027/deposit/v1" ;;
-                "teller-service")   TELLER_URL="http://$ip:2028/teller/v1" ;;
-                "reporting-service")   REPORT_URL="http://$ip:2029/report/v1" ;;
-                "cheques-service")   CHEQUES_URL="http://$ip:2030/cheques/v1" ;;
-                "payroll-service")   PAYROLL_URL="http://$ip:2031/payroll/v1" ;;
-                "group-service")   GROUP_URL="http://$ip:2032/group/v1" ;;
-                "notification-service")   NOTIFICATIONS_URL="http://$ip:2033/notification/v1" ;;
+                "office-ms") OFFICE_URL="http://$ip:2023/office/v1" ;;
+                "customer-ms")   CUSTOMER_URL="http://$ip:2024/customer/v1" ;;
+                "accounting-ms")   ACCOUNTING_URL="http://$ip:2025/accounting/v1" ;;
+                "portfolio-ms")   PORTFOLIO_URL="http://$ip:2026/portfolio/v1" ;;
+                "deposit-account-management-ms")   DEPOSIT_URL="http://$ip:2027/deposit/v1" ;;
+                "teller-ms")   TELLER_URL="http://$ip:2028/teller/v1" ;;
+                "reporting-ms")   REPORT_URL="http://$ip:2029/report/v1" ;;
+                "cheques-ms")   CHEQUES_URL="http://$ip:2030/cheques/v1" ;;
+                "payroll-ms")   PAYROLL_URL="http://$ip:2031/payroll/v1" ;;
+                "group-ms")   GROUP_URL="http://$ip:2032/group/v1" ;;
+                "notifications-ms")   NOTIFICATIONS_URL="http://$ip:2033/notification/v1" ;;
             esac
         elif [[ ${service} != "kubernetes"  ]]
         then
@@ -75,6 +76,22 @@ function config-kubernetes-addresss {
         fi
     done < "cluster_addressess.txt"
 
+    if [[ "${CASSANDRA_CONTACT_POINTS}" == "UNKNOWN" ]]; then echo "Unknown CASSANDRA_CONTACT_POINTS"; exit 1; fi
+    if [[ "${PROVISIONER_URL}" == "UNKNOWN" ]]; then echo "Unknown PROVISIONER_URL"; exit 1; fi
+    if [[ "${IDENTITY_URL}" == "UNKNOWN" ]]; then echo "Unknown IDENTITY_URL"; exit 1; fi
+    if [[ "${RHYTHM_URL}" == "UNKNOWN" ]]; then echo "Unknown RHYTHM_URL"; exit 1; fi
+    if [[ "${OFFICE_URL}" == "UNKNOWN" ]]; then echo "Unknown OFFICE_URL"; exit 1; fi
+    if [[ "${CUSTOMER_URL}" == "UNKNOWN" ]]; then echo "Unknown CUSTOMER_URL"; exit 1; fi
+    if [[ "${ACCOUNTING_URL}" == "UNKNOWN" ]]; then echo "Unknown ACCOUNTING_URL"; exit 1; fi
+    if [[ "${PORTFOLIO_URL}" == "UNKNOWN" ]]; then echo "Unknown PORTFOLIO_URL"; exit 1; fi
+    if [[ "${DEPOSIT_URL}" == "UNKNOWN" ]]; then echo "Unknown DEPOSIT_URL"; exit 1; fi
+    if [[ "${TELLER_URL}" == "UNKNOWN" ]]; then echo "Unknown TELLER_URL"; exit 1; fi
+    if [[ "${REPORT_URL}" == "UNKNOWN" ]]; then echo "Unknown REPORT_URL"; exit 1; fi
+    if [[ "${CHEQUES_URL}" == "UNKNOWN" ]]; then echo "Unknown CHEQUES_URL"; exit 1; fi
+    if [[ "${PAYROLL_URL}" == "UNKNOWN" ]]; then echo "Unknown PAYROLL_URL"; exit 1; fi
+    if [[ "${GROUP_URL}" == "UNKNOWN" ]]; then echo "Unknown GROUP_URL"; exit 1; fi
+    if [[ "${NOTIFICATIONS_URL}" == "UNKNOWN" ]]; then echo "Unknown NOTIFICATIONS_URL"; exit 1; fi
+
     echo "Successfully configured kubernetes ip addresses"
 }
 
@@ -82,6 +99,15 @@ function auto-seshat {
     TOKEN=$( curl -s -X POST -H "Content-Type: application/json" \
         "$PROVISIONER_URL"'/auth/token?grant_type=password&client_id=service-runner&username=wepemnefret&password=oS/0IiAME/2unkN1momDrhAdNKOhGykYFH/mJN20' \
          | jq --raw-output '.token' )
+
+    if [[ "${TOKEN}" == "" ]]; then
+        echo "ERROR: TOKEN is null"
+        exit 1
+    else
+        echo "auto-seshat OK"
+        echo "TOKEN=${TOKEN}"
+        sleep 10
+    fi
 }
 
 function login {
@@ -92,6 +118,14 @@ function login {
     ACCESS_TOKEN=$( curl -s -X POST -H "Content-Type: application/json" -H "User: guest" -H "X-Tenant-Identifier: $tenant" \
        "${IDENTITY_URL}/token?grant_type=password&username=${username}&password=${password}" \
         | jq --raw-output '.accessToken' )
+
+    if [[ "${ACCESS_TOKEN}" == "" || "${ACCESS_TOKEN}" == "null" ]]; then
+        echo "ERROR: login failed, ACCESS_TOKEN is null"
+        exit 1
+    else
+        echo "login as ${username} with password ${password}"
+        sleep 5
+    fi
 }
 
 function create-application {
@@ -161,6 +195,7 @@ function assign-identity-ms {
     ADMIN_PASSWORD=$( curl -s -H "Content-Type: application/json" -H "User: wepemnefret" -H "Authorization: ${TOKEN}" -H "X-Tenant-Identifier: $tenant" \
 	--data '{ "name": "'"$IDENTITY_MS_NAME"'" }' \
 	${PROVISIONER_URL}/tenants/${tenant}/identityservice | jq --raw-output '.adminPassword')
+
     echo "Assigned identity microservice for tenant $tenant"
 }
 
@@ -439,7 +474,11 @@ create-application "$NOTIFICATIONS_MS_NAME" "" "$MS_VENDOR" "$NOTIFICATIONS_URL"
 
 # Set tenant identifier
 create-tenant ${TENANT} "${TENANT}" "All in one Demo Server" ${TENANT}
+
+# Sets ADMIN_PASSWORD
 assign-identity-ms ${TENANT}
+echo "$ADMIN_PASSWORD" > admin_pass.txt
+
 login ${TENANT} "antony" $ADMIN_PASSWORD
 provision-app ${TENANT} $RHYTHM_MS_NAME
 provision-app ${TENANT} $OFFICE_MS_NAME

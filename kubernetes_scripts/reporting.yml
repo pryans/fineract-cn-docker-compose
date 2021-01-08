@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: reporting-service
+  name: reporting-ms
   namespace: default
 spec:
   selector:

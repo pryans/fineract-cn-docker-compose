@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: group-service
+  name: group-ms
   namespace: default
 spec:
   selector:
